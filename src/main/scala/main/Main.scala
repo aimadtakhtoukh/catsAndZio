@@ -13,17 +13,12 @@ object Main extends App {
     println(int)
   }
 
-  Await.ready(
-    effect("5")
-      .map(sideEffect)
-      .recover(_.printStackTrace()),
-    Duration.Inf
-  )
+  List("5", "cinq")
+    .map(
+      effect(_)
+        .map(sideEffect)
+        .recover(_.printStackTrace())
+    )
+    .foreach(Await.ready(_, Duration.Inf))
 
-  Await.ready(
-    effect("cinq")
-      .map(sideEffect)
-      .recover(_.printStackTrace()),
-    Duration.Inf
-  )
 }
