@@ -2,26 +2,36 @@ package main
 
 import scala.util.Try
 
+sealed trait EffectError
+case object NotANumber extends EffectError
+case class Unexpected(t: Throwable) extends EffectError
+
 object Main extends App {
-  def effect(int : String) : Try[Int] = {
+  def handleNumberFormatException: Throwable => EffectError = {
+    case _: NumberFormatException => NotANumber
+    case e => Unexpected(e)
+  }
+
+  def effect(int : String) : Either[EffectError, Int] = {
     Try { int.toInt }
+      .toEither
+      .left
+      .map(handleNumberFormatException)
   }
 
-  def sideEffect(int: Int): Unit = {
-    println(int)
+  def sideEffect(int: Int): Int = {
+    println(int); int
   }
 
-  def handleNumberFormatException: PartialFunction[Throwable, Unit] = {
-    case _: NumberFormatException => System.err.println("The input isn't a number")
+  def showError: EffectError => Unit = {
+    case NotANumber => System.err.println("Not a number")
+    case Unexpected(t) => t.printStackTrace()
   }
 
-  effect("5")
-    .map(sideEffect)
-    .recover(handleNumberFormatException)
-    .recover(_.printStackTrace())
+  effect("5").map(sideEffect).left.map(showError)
 
-  effect("cinq")
-    .map(sideEffect)
-    .recover(handleNumberFormatException)
-    .recover(_.printStackTrace())
+  effect("cinq") match {
+    case Right(value) => sideEffect(value)
+    case Left(effectError) => showError(effectError)
+  }
 }
