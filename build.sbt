@@ -8,4 +8,5 @@ lazy val root = (project in file("."))
   )
 
 libraryDependencies += "org.typelevel" %% "cats-core" % "2.7.0"
-libraryDependencies += "dev.zio" %% "zio-streams" % "1.0.13"
+libraryDependencies += "dev.zio" %% "zio" % "1.0.13"
+libraryDependencies += "dev.zio" %% "zio-interop-cats" % "3.2.9.1"
