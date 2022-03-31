@@ -11,11 +11,17 @@ object Main extends App {
     println(int)
   }
 
+  def handleNumberFormatException: PartialFunction[Throwable, Unit] = {
+    case _: NumberFormatException => System.err.println("The input isn't a number")
+  }
+
   effect("5")
     .map(sideEffect)
+    .recover(handleNumberFormatException)
     .recover(_.printStackTrace())
 
   effect("cinq")
     .map(sideEffect)
+    .recover(handleNumberFormatException)
     .recover(_.printStackTrace())
 }
