@@ -1,8 +1,11 @@
 package main
 
+import cats.data.EitherT
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
+import cats.syntax.all._
 
 sealed trait EffectError
 case object NotANumber extends EffectError
@@ -14,10 +17,12 @@ object Main extends App {
     case e => Unexpected(e)
   }
 
-  def effect(int : String) : Future[Either[EffectError, Int]] = {
-    Future { Thread.sleep(1500); int.toInt }
-      .map(Right(_))
-      .recover{ case t: Throwable => Left(handleNumberFormatException(t)) }
+  def effect(int : String) : EitherT[Future, EffectError, Int] = {
+    EitherT(
+      Future { Thread.sleep(1500); int.toInt }
+      .map(_.asRight)
+      .recover{ case t: Throwable => handleNumberFormatException(t).asLeft }
+    )
   }
 
   def sideEffect(int: Int): Unit = {
@@ -29,15 +34,15 @@ object Main extends App {
     case Unexpected(t) => t.printStackTrace()
   }
 
-  List("5", "cinq")
-    .map(stringlyTypedInt =>
-      effect(stringlyTypedInt)
-        .map {
-          case Right(value) => sideEffect(value)
-          case Left(error) => showError(error)
-        }
-        .recover(_.printStackTrace())
-    )
-    .foreach(Await.ready(_, Duration.Inf))
+  Await.ready(
+    List("5", "cinq")
+      .traverse(effect)
+      .bimap(
+        left => showError(left),
+        right => right.foreach(sideEffect)
+      )
+      .value,
+    Duration.Inf
+  )
 
 }
